@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ibest 文章圖片轉檔</title>
+    <style>
+        /* * 設計風格：日式商業風格 (Japanese Business Style)
+         * 配色方案：莫蘭迪配色 (Morandi Color Palette)
+         * 顏色代碼：
+         * - 背景：#F7F6F2 (米灰色)
+         * - 主色：#8E9775 (苔綠色)
+         * - 輔助色：#A2AAB0 (灰藍色)
+         * - 文字：#4A4A4A (深灰)
+         */
+        :root {
+            --bg-color: #F7F6F2;
+            --primary-color: #8E9775;
+            --secondary-color: #A2AAB0;
+            --accent-color: #D4A373;
+            --text-color: #4A4A4A;
+            --border-color: #E0DDD5;
+            --white: #FFFFFF;
+            --error: #E28C8C;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Arial, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--white);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        /* 標題區域 */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        header h1 {
+            font-size: 24px;
+            letter-spacing: 2px;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+
+        /* 上傳區域 */
+        .upload-section {
+            border: 2px dashed var(--secondary-color);
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #FAFAFA;
+        }
+
+        .upload-section:hover {
+            background: #F0F2F0;
+            border-color: var(--primary-color);
+        }
+
+        .upload-section p {
+            margin-top: 10px;
+            color: var(--secondary-color);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            opacity: 0.85;
+        }
+
+        .btn-download-all {
+            background-color: var(--accent-color);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        /* 規範說明清單 */
+        .rules {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #FBFBFA;
+            border-left: 4px solid var(--secondary-color);
+            font-size: 14px;
+        }
+
+        .rules ul {
+            list-style: none;
+            margin-left: 5px;
+        }
+
+        /* 圖片列表區域 */
+        .file-list {
+            margin-top: 30px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .preview-thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: #eee;
+        }
+
+        .details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filename {
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .status {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .actions {
+            margin-left: 10px;
+        }
+
+        .download-link {
+            color: var(--primary-color);
+            text-decoration: underline;
+            font-size: 14px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* RWD 適應 */
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            .file-item { flex-direction: column; align-items: flex-start; }
+            .actions { margin-top: 10px; margin-left: 75px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ibest 文章圖片轉檔</h1>
+    </header>
+
+    <div class="rules">
+        <strong>系統轉檔規範：</strong>
+        <ul>
+            <li>• 自動轉換為 JPG 格式（副檔名：.jpg）</li>
+            <li>• 圖片寬高自動限制在 2000px 內（等比例縮放）</li>
+            <li>• 檔案大小自動壓縮至 5MB 以下</li>
+        </ul>
+    </div>
+
+    <div class="upload-section" onclick="document.getElementById('fileInput').click()">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#A2AAB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <p>點擊或拖曳圖片至此處</p>
+        <button class="btn">選取檔案</button>
+        <input type="file" id="fileInput" accept="image/*" multiple>
+    </div>
+
+    <div class="file-list" id="fileList">
+        <!-- 處理後的圖片項目會顯示在這裡 -->
+    </div>
+
+    <div style="text-align: center;">
+        <button id="downloadAllBtn" class="btn btn-download-all">下載所有轉檔圖片</button>
+    </div>
+</div>
+
+<script>
+    /**
+     * ibest 圖片轉檔核心邏輯
+     * 處理流程：讀取檔案 -> Canvas 縮放 -> 檢查大小 -> 轉 Blob -> 下載
+     */
+
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    
+    let processedFiles = [];
+
+    // 監聽檔案選擇
+    fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            handleFiles(files);
+        }
+    });
+
+    // 處理檔案主函式
+    async function handleFiles(files) {
+        for (const file of files) {
+            await processImage(file);
+        }
+        
+        if (processedFiles.length > 0) {
+            downloadAllBtn.style.display = 'inline-block';
+        }
+    }
+
+    // 圖片轉檔與壓縮核心邏輯
+    async function processImage(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxSide = 2000;
+
+                    // 1. 計算縮放比例 (長邊不超過 2000)
+                    if (width > maxSide || height > maxSide) {
+                        if (width > height) {
+                            height = Math.round((height * maxSide) / width);
+                            width = maxSide;
+                        } else {
+                            width = Math.round((width * maxSide) / height);
+                            height = maxSide;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 填滿白色背景 (防止透明 PNG 變成黑色)
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // 2. 導出為 JPG 並控制檔案大小
+                    let quality = 0.92;
+                    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    
+                    // 簡單迭代：若超過 5MB 則降低品質 (5MB = 5 * 1024 * 1024 bytes)
+                    // 對於 2000x2000 的 JPG 來說，0.9 品質通常遠低於 5MB，此處為保險機制
+                    while (dataUrl.length > 5 * 1024 * 1024 * 1.37 && quality > 0.1) {
+                        quality -= 0.1;
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    }
+
+                    // 3. 準備下載資訊
+                    const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                    const newFileName = `${originalName}.jpg`; // 強制小寫 .jpg
+                    
+                    const result = {
+                        name: newFileName,
+                        url: dataUrl,
+                        originalSize: (file.size / 1024).toFixed(1),
+                        newSize: (calculateBase64Size(dataUrl) / 1024).toFixed(1),
+                        dimensions: `${width} x ${height}`
+                    };
+
+                    addToFileList(result);
+                    processedFiles.push(result);
+                    resolve();
+                };
+            };
+        });
+    }
+
+    // 計算 Base64 檔案大小 (近似值)
+    function calculateBase64Size(base64String) {
+        const stringLength = base64String.length - base64String.indexOf(',') - 1;
+        return Math.ceil(stringLength * 0.75);
+    }
+
+    // 更新 UI 列表
+    function addToFileList(fileObj) {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.innerHTML = `
+            <div class="file-info">
+                <img src="${fileObj.url}" class="preview-thumb">
+                <div class="details">
+                    <span class="filename">${fileObj.name}</span>
+                    <span class="status">尺寸: ${fileObj.dimensions} | 大小: ${fileObj.newSize} KB (原 ${fileObj.originalSize} KB)</span>
+                </div>
+            </div>
+            <div class="actions">
+                <a href="${fileObj.url}" download="${fileObj.name}" class="download-link">單獨下載</a>
+            </div>
+        `;
+        fileList.prepend(item);
+    }
+
+    // 批次下載功能
+    downloadAllBtn.addEventListener('click', () => {
+        processedFiles.forEach((file, index) => {
+            // 使用延遲觸發多個下載，防止瀏覽器阻擋
+            setTimeout(() => {
+                const link = document.createElement('a');
+                link.href = file.url;
+                link.download = file.name;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }, index * 300);
+        });
+    });
+
+    // 拖曳上傳支援
+    const dropZone = document.querySelector('.upload-section');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = Array.from(dt.files).filter(f => f.type.startsWith('image/'));
+        if (files.length > 0) {
+            handleFiles(files);
+        }
+    });
+
+</script>
+
+</body>
+</html>
