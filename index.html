@@ -4,15 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ibest 文章圖片轉檔</title>
+    <!-- 引入 HEIC 轉換函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <style>
-        /* * 設計風格：日式商業風格 (Japanese Business Style)
-         * 配色方案：莫蘭迪配色 (Morandi Color Palette)
-         * 顏色代碼：
-         * - 背景：#F7F6F2 (米灰色)
-         * - 主色：#8E9775 (苔綠色)
-         * - 輔助色：#A2AAB0 (灰藍色)
-         * - 文字：#4A4A4A (深灰)
-         */
         :root {
             --bg-color: #F7F6F2;
             --primary-color: #8E9775;
@@ -21,7 +15,7 @@
             --text-color: #4A4A4A;
             --border-color: #E0DDD5;
             --white: #FFFFFF;
-            --error: #E28C8C;
+            --loading-bg: rgba(255, 255, 255, 0.8);
         }
 
         * {
@@ -49,7 +43,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
-        /* 標題區域 */
         header {
             text-align: center;
             margin-bottom: 40px;
@@ -64,7 +57,6 @@
             color: var(--primary-color);
         }
 
-        /* 上傳區域 */
         .upload-section {
             border: 2px dashed var(--secondary-color);
             padding: 40px 20px;
@@ -73,16 +65,12 @@
             transition: all 0.3s ease;
             cursor: pointer;
             background: #FAFAFA;
+            position: relative;
         }
 
         .upload-section:hover {
             background: #F0F2F0;
             border-color: var(--primary-color);
-        }
-
-        .upload-section p {
-            margin-top: 10px;
-            color: var(--secondary-color);
         }
 
         #fileInput {
@@ -109,11 +97,10 @@
 
         .btn-download-all {
             background-color: var(--accent-color);
-            margin-bottom: 20px;
+            margin: 20px 0;
             display: none;
         }
 
-        /* 規範說明清單 */
         .rules {
             margin: 20px 0;
             padding: 15px;
@@ -127,7 +114,6 @@
             margin-left: 5px;
         }
 
-        /* 圖片列表區域 */
         .file-list {
             margin-top: 30px;
         }
@@ -171,8 +157,9 @@
             color: #888;
         }
 
-        .actions {
-            margin-left: 10px;
+        .status.processing {
+            color: var(--accent-color);
+            font-weight: bold;
         }
 
         .download-link {
@@ -181,12 +168,24 @@
             font-size: 14px;
         }
 
+        #globalLoader {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--loading-bg);
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* RWD 適應 */
         @media (max-width: 600px) {
             .container { padding: 20px; }
             .file-item { flex-direction: column; align-items: flex-start; }
@@ -196,6 +195,10 @@
 </head>
 <body>
 
+<div id="globalLoader">
+    <p>正在轉換 HEIC 檔案，請稍候...</p>
+</div>
+
 <div class="container">
     <header>
         <h1>ibest 文章圖片轉檔</h1>
@@ -204,64 +207,86 @@
     <div class="rules">
         <strong>系統轉檔規範：</strong>
         <ul>
-            <li>• 自動轉換為 JPG 格式（副檔名：.jpg）</li>
-            <li>• 圖片寬高自動限制在 2000px 內（等比例縮放）</li>
-            <li>• 檔案大小自動壓縮至 5MB 以下</li>
+            <li>• 支援格式：JPG, PNG, WebP, <strong>HEIC (iPhone 格式)</strong></li>
+            <li>• 輸出格式：JPG（副檔名：.jpg）</li>
+            <li>• 圖片尺寸：長邊自動限制 2000px 內</li>
+            <li>• 檔案大小：自動壓縮至 5MB 以下</li>
         </ul>
     </div>
 
     <div class="upload-section" onclick="document.getElementById('fileInput').click()">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#A2AAB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        <p>點擊或拖曳圖片至此處</p>
+        <p>點擊或拖曳圖片至此處 (支援 HEIC)</p>
         <button class="btn">選取檔案</button>
-        <input type="file" id="fileInput" accept="image/*" multiple>
-    </div>
-
-    <div class="file-list" id="fileList">
-        <!-- 處理後的圖片項目會顯示在這裡 -->
+        <input type="file" id="fileInput" accept="image/*,.heic,.heif" multiple>
     </div>
 
     <div style="text-align: center;">
         <button id="downloadAllBtn" class="btn btn-download-all">下載所有轉檔圖片</button>
     </div>
+
+    <div class="file-list" id="fileList"></div>
 </div>
 
 <script>
     /**
-     * ibest 圖片轉檔核心邏輯
-     * 處理流程：讀取檔案 -> Canvas 縮放 -> 檢查大小 -> 轉 Blob -> 下載
+     * 程式功能性說明：
+     * 1. 支援 HEIC/HEIF 預處理：透過 heic2any 函式庫轉換為 Blob。
+     * 2. 圖片調整：讀取轉化後的資料至 Canvas，執行縮放與格式轉換。
+     * 3. 檔名處理：統一移除原副檔名並加上小寫 .jpg。
      */
 
     const fileInput = document.getElementById('fileInput');
     const fileList = document.getElementById('fileList');
     const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const globalLoader = document.getElementById('globalLoader');
     
     let processedFiles = [];
 
-    // 監聽檔案選擇
-    fileInput.addEventListener('change', (e) => {
+    fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
         if (files.length > 0) {
-            handleFiles(files);
+            await handleFiles(files);
         }
+        fileInput.value = ""; // 清空以便重複選取
     });
 
-    // 處理檔案主函式
     async function handleFiles(files) {
         for (const file of files) {
             await processImage(file);
         }
-        
         if (processedFiles.length > 0) {
             downloadAllBtn.style.display = 'inline-block';
         }
     }
 
-    // 圖片轉檔與壓縮核心邏輯
     async function processImage(file) {
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
+            const fileNameLower = file.name.toLowerCase();
+            let targetBlob = file;
+
+            // 處理 HEIC 檔案
+            if (fileNameLower.endsWith('.heic') || fileNameLower.endsWith('.heif')) {
+                globalLoader.style.display = 'flex';
+                try {
+                    // 將 HEIC 轉為 JPEG Blob
+                    const convertedBlob = await heic2any({
+                        blob: file,
+                        toType: "image/jpeg",
+                        quality: 0.8
+                    });
+                    targetBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                } catch (error) {
+                    console.error("HEIC 轉換失敗:", error);
+                    resolve();
+                    return;
+                } finally {
+                    globalLoader.style.display = 'none';
+                }
+            }
+
             const reader = new FileReader();
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(targetBlob);
             reader.onload = (event) => {
                 const img = new Image();
                 img.src = event.target.result;
@@ -271,7 +296,6 @@
                     let height = img.height;
                     const maxSide = 2000;
 
-                    // 1. 計算縮放比例 (長邊不超過 2000)
                     if (width > maxSide || height > maxSide) {
                         if (width > height) {
                             height = Math.round((height * maxSide) / width);
@@ -285,26 +309,22 @@
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
-                    
-                    // 填滿白色背景 (防止透明 PNG 變成黑色)
                     ctx.fillStyle = "#FFFFFF";
                     ctx.fillRect(0, 0, width, height);
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // 2. 導出為 JPG 並控制檔案大小
                     let quality = 0.92;
                     let dataUrl = canvas.toDataURL('image/jpeg', quality);
                     
-                    // 簡單迭代：若超過 5MB 則降低品質 (5MB = 5 * 1024 * 1024 bytes)
-                    // 對於 2000x2000 的 JPG 來說，0.9 品質通常遠低於 5MB，此處為保險機制
-                    while (dataUrl.length > 5 * 1024 * 1024 * 1.37 && quality > 0.1) {
-                        quality -= 0.1;
+                    // 確保檔案大小小於 5MB
+                    const limit = 5 * 1024 * 1024;
+                    while (calculateBase64Size(dataUrl) > limit && quality > 0.1) {
+                        quality -= 0.05;
                         dataUrl = canvas.toDataURL('image/jpeg', quality);
                     }
 
-                    // 3. 準備下載資訊
-                    const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                    const newFileName = `${originalName}.jpg`; // 強制小寫 .jpg
+                    const originalBaseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+                    const newFileName = `${originalBaseName.toLowerCase().replace(/\s+/g, '_')}.jpg`;
                     
                     const result = {
                         name: newFileName,
@@ -322,13 +342,11 @@
         });
     }
 
-    // 計算 Base64 檔案大小 (近似值)
     function calculateBase64Size(base64String) {
         const stringLength = base64String.length - base64String.indexOf(',') - 1;
         return Math.ceil(stringLength * 0.75);
     }
 
-    // 更新 UI 列表
     function addToFileList(fileObj) {
         const item = document.createElement('div');
         item.className = 'file-item';
@@ -337,20 +355,18 @@
                 <img src="${fileObj.url}" class="preview-thumb">
                 <div class="details">
                     <span class="filename">${fileObj.name}</span>
-                    <span class="status">尺寸: ${fileObj.dimensions} | 大小: ${fileObj.newSize} KB (原 ${fileObj.originalSize} KB)</span>
+                    <span class="status">尺寸: ${fileObj.dimensions} | 大小: ${fileObj.newSize} KB</span>
                 </div>
             </div>
             <div class="actions">
-                <a href="${fileObj.url}" download="${fileObj.name}" class="download-link">單獨下載</a>
+                <a href="${fileObj.url}" download="${fileObj.name}" class="download-link">下載</a>
             </div>
         `;
         fileList.prepend(item);
     }
 
-    // 批次下載功能
     downloadAllBtn.addEventListener('click', () => {
         processedFiles.forEach((file, index) => {
-            // 使用延遲觸發多個下載，防止瀏覽器阻擋
             setTimeout(() => {
                 const link = document.createElement('a');
                 link.href = file.url;
@@ -358,30 +374,22 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-            }, index * 300);
+            }, index * 400);
         });
     });
 
-    // 拖曳上傳支援
+    // 拖曳處理
     const dropZone = document.querySelector('.upload-section');
-    
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => {
+        dropZone.addEventListener(eName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
     });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
     dropZone.addEventListener('drop', (e) => {
-        const dt = e.dataTransfer;
-        const files = Array.from(dt.files).filter(f => f.type.startsWith('image/'));
-        if (files.length > 0) {
-            handleFiles(files);
-        }
+        const files = Array.from(e.dataTransfer.files);
+        handleFiles(files);
     });
-
 </script>
 
 </body>
