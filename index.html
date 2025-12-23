@@ -23,7 +23,8 @@
             --text-color: #4A4A4A;
             --border-color: #E0DDD5;
             --white: #FFFFFF;
-            --loading-bg: rgba(255, 255, 255, 0.85);
+            --error-color: #C97D7D;
+            --loading-bg: rgba(255, 255, 255, 0.9);
         }
 
         * {
@@ -39,7 +40,9 @@
             line-height: 1.6;
             padding: 20px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
         }
 
         .container {
@@ -47,15 +50,16 @@
             max-width: 900px;
             background: var(--white);
             padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            flex-grow: 1;
         }
 
         header {
             text-align: center;
             margin-bottom: 40px;
             border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 15px;
+            padding-bottom: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -68,17 +72,18 @@
         }
 
         header h1 {
-            font-size: 24px;
+            font-size: 26px;
             letter-spacing: 2px;
             font-weight: 500;
             color: var(--primary-color);
         }
 
+        /* 檔案上傳交互區塊 */
         .upload-section {
             border: 2px dashed var(--secondary-color);
-            padding: 40px 20px;
+            padding: 50px 20px;
             text-align: center;
-            border-radius: 6px;
+            border-radius: 8px;
             transition: all 0.3s ease;
             cursor: pointer;
             background: #FAFAFA;
@@ -86,7 +91,7 @@
         }
 
         .upload-section:hover {
-            background: #F0F2F0;
+            background: #F2F4F2;
             border-color: var(--primary-color);
         }
 
@@ -98,39 +103,48 @@
             display: inline-block;
             background-color: var(--primary-color);
             color: white;
-            padding: 12px 30px;
+            padding: 12px 35px;
             border-radius: 4px;
             text-decoration: none;
             font-size: 16px;
             border: none;
             cursor: pointer;
-            transition: opacity 0.3s;
+            transition: transform 0.2s, opacity 0.3s;
             margin-top: 15px;
+            font-weight: 500;
         }
 
         .btn:hover {
-            opacity: 0.85;
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
 
         .btn-download-all {
             background-color: var(--accent-color);
-            margin: 20px 0;
+            margin: 25px 0;
             display: none;
         }
 
+        /* 轉檔規範提示區 */
         .rules {
             margin: 20px 0;
-            padding: 15px;
+            padding: 20px;
             background-color: #FBFBFA;
-            border-left: 4px solid var(--secondary-color);
+            border-left: 5px solid var(--secondary-color);
             font-size: 14px;
+            border-radius: 0 4px 4px 0;
         }
 
         .rules ul {
             list-style: none;
-            margin-left: 5px;
+            margin-top: 5px;
         }
 
+        .rules li {
+            margin-bottom: 4px;
+        }
+
+        /* 處理結果列表 */
         .file-list {
             margin-top: 30px;
         }
@@ -139,47 +153,75 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 15px;
+            padding: 18px;
             border-bottom: 1px solid var(--border-color);
-            animation: fadeIn 0.5s ease;
+            animation: fadeIn 0.4s ease-out;
         }
 
         .file-info {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
             flex: 1;
         }
 
         .preview-thumb {
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             object-fit: cover;
-            border-radius: 4px;
-            background: #eee;
+            border-radius: 6px;
+            background: #F0F0F0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
         .details {
             display: flex;
             flex-direction: column;
+            gap: 4px;
         }
 
         .filename {
             font-weight: 500;
             word-break: break-all;
+            color: var(--text-color);
         }
 
         .status {
-            font-size: 12px;
-            color: #888;
+            font-size: 13px;
+            color: #777;
+        }
+
+        .status.error {
+            color: var(--error-color);
         }
 
         .download-link {
             color: var(--primary-color);
-            text-decoration: underline;
+            text-decoration: none;
             font-size: 14px;
+            font-weight: 500;
+            border: 1px solid var(--primary-color);
+            padding: 6px 15px;
+            border-radius: 4px;
+            transition: all 0.2s;
         }
 
+        .download-link:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* 版權資訊 */
+        footer {
+            margin-top: 40px;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--secondary-color);
+            letter-spacing: 1px;
+        }
+
+        /* 系統加載狀態 */
         #globalLoader {
             display: none;
             position: fixed;
@@ -190,72 +232,77 @@
             align-items: center;
             justify-content: center;
             color: var(--primary-color);
-            font-weight: bold;
+            font-weight: 500;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* 響應式佈局調整 */
         @media (max-width: 600px) {
-            .container { padding: 20px; }
-            .file-item { flex-direction: column; align-items: flex-start; }
-            .actions { margin-top: 10px; margin-left: 75px; }
+            .container { padding: 25px 15px; }
+            .file-item { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .actions { width: 100%; text-align: right; }
+            header h1 { font-size: 20px; }
         }
     </style>
 </head>
 <body>
 
 <div id="globalLoader">
-    <p>正在處理圖片，請稍候...</p>
+    <p>正在處理高效能影像格式，請稍候...</p>
 </div>
 
 <div class="container">
     <header>
-        <!-- 同步加入標題裝飾圖示 -->
         <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#8E9775'><path d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/></svg>
         <h1>ibest 文章圖片轉檔</h1>
     </header>
 
     <div class="rules">
-        <strong>轉檔與壓縮規範：</strong>
+        <strong>轉檔與品質檢查規範：</strong>
         <ul>
-            <li>• <strong>格式轉換：</strong>統一轉換為 `.jpg` (副檔名一律小寫)</li>
-            <li>• <strong>檔名保留：</strong>保留原始檔名與大小寫</li>
-            <li>• <strong>尺寸限制：</strong>長邊自動限制於 2000px 內 (等比例縮放)</li>
-            <li>• <strong>品質壓縮：</strong>預設使用 95% 品質壓縮</li>
-            <li>• <strong>體積限制：</strong>檔案大小強制限制於 5MB 以下</li>
+            <li>• <strong>格式：</strong>統一輸出 `.jpg` (副檔名小寫)</li>
+            <li>• <strong>檔名：</strong>完整保留原檔名大小寫</li>
+            <li>• <strong>尺寸：</strong>長邊限制 2000px 內 (超過自動等比例縮小)</li>
+            <li>• <strong>品質：</strong>初始 95% 高品質壓縮，強制體積於 5MB 以下</li>
         </ul>
     </div>
 
-    <div class="upload-section" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-section" id="dropZone" onclick="document.getElementById('fileInput').click()">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#A2AAB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        <p>點擊或拖曳圖片至此處 (支援 JPG, PNG, HEIC, WebP)</p>
-        <button class="btn">選取檔案</button>
+        <p>點擊或拖曳圖片至此處理 (支援多檔案批次上傳)</p>
+        <button class="btn">選擇圖片檔案</button>
         <input type="file" id="fileInput" accept="image/*,.heic,.heif" multiple>
     </div>
 
     <div style="text-align: center;">
-        <button id="downloadAllBtn" class="btn btn-download-all">下載所有轉檔圖片</button>
+        <button id="downloadAllBtn" class="btn btn-download-all">批次下載所有轉檔檔案</button>
     </div>
 
     <div class="file-list" id="fileList"></div>
 </div>
 
+<footer>
+    &copy; 2026 hzwfork. All Rights Reserved.
+</footer>
+
 <script>
     /**
-     * 整體功能性說明：
-     * 1. 提供本地影像格式轉換流程，包含 HEIC 格式預處理。
-     * 2. 影像渲染邏輯：利用 Canvas API 進行比例縮放與渲染。
-     * 3. 壓縮邏輯：設置高基準品質(95%)，若結果超出體積限制則執行動態降質。
-     * 4. 檔名管理：提取原檔名後，後綴固定為小寫副檔名，並精確保留大小寫。
+     * 核心功能模組說明：
+     * 1. 影像預處理：支援 HEIC/HEIF 轉碼為可讀 Blob。
+     * 2. 畫布渲染：運用 Canvas API 處理像素級縮放與背景填充。
+     * 3. 智慧壓縮：以 95% 品質為起點，動態計算 Base64 字元數以確保符合 5MB 限制。
+     * 4. 檔案管理：基於瀏覽器環境進行虛擬下載連結管理。
      */
 
     const fileInput = document.getElementById('fileInput');
     const fileList = document.getElementById('fileList');
     const downloadAllBtn = document.getElementById('downloadAllBtn');
     const globalLoader = document.getElementById('globalLoader');
+    const dropZone = document.getElementById('dropZone');
     
     let processedFiles = [];
 
@@ -268,7 +315,7 @@
     });
 
     async function handleFiles(files) {
-        processedFiles = []; 
+        // 每次重新選取檔案時，將按鈕重置（清單則持續增加或清空視需求，此處採持續增加）
         for (const file of files) {
             await processImage(file);
         }
@@ -282,23 +329,23 @@
             const fileNameLower = file.name.toLowerCase();
             let targetBlob = file;
 
-            // 預處理：HEIC/HEIF 轉換為 JPEG Blob 供後續 Canvas 讀取
+            // HEIC/HEIF 特殊解碼處理
             if (fileNameLower.endsWith('.heic') || fileNameLower.endsWith('.heif')) {
                 globalLoader.style.display = 'flex';
                 try {
                     const convertedBlob = await heic2any({
                         blob: file,
                         toType: "image/jpeg",
-                        quality: 0.8
+                        quality: 0.9 // HEIC 轉 JPEG 預設高品質
                     });
                     targetBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
                 } catch (error) {
-                    console.error("HEIC 解碼失敗:", error);
+                    addErrorItem(file.name, "HEIC 格式解碼失敗");
+                    globalLoader.style.display = 'none';
                     resolve();
                     return;
-                } finally {
-                    globalLoader.style.display = 'none';
                 }
+                globalLoader.style.display = 'none';
             }
 
             const reader = new FileReader();
@@ -312,38 +359,34 @@
                     let height = img.height;
                     const maxSide = 2000;
 
-                    // 縮放邏輯：長邊基準限制 2000px
+                    // 計算等比例縮放尺寸
                     if (width > maxSide || height > maxSide) {
-                        if (width > height) {
-                            height = Math.round((height * maxSide) / width);
-                            width = maxSide;
-                        } else {
-                            width = Math.round((width * maxSide) / height);
-                            height = maxSide;
-                        }
+                        const ratio = Math.min(maxSide / width, maxSide / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
                     }
 
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     
-                    // 背景處理：確保透明背景圖層轉為 JPG 時呈現白色
+                    // 背景填充：解決透明度圖片轉 JPG 變黑的問題
                     ctx.fillStyle = "#FFFFFF";
                     ctx.fillRect(0, 0, width, height);
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // 核心品質與體積壓縮邏輯
-                    let quality = 0.95; // 初始品質從 95% 開始
+                    // 智慧品質壓縮 (從 95% 起跳)
+                    let quality = 0.95;
                     let dataUrl = canvas.toDataURL('image/jpeg', quality);
                     
-                    // 體積校正：若超過 5MB 則遞減品質
+                    // 5MB 體積防線
                     const limit = 5 * 1024 * 1024;
                     while (calculateBase64Size(dataUrl) > limit && quality > 0.1) {
                         quality -= 0.05;
                         dataUrl = canvas.toDataURL('image/jpeg', quality);
                     }
 
-                    // 檔名處理：提取原檔名部分，精確保留大小寫，副檔名統一為小寫 .jpg
+                    // 檔名處理：保留原檔名 + 小寫副檔名
                     const lastDotIndex = file.name.lastIndexOf('.');
                     const originalBaseName = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
                     const newFileName = `${originalBaseName}.jpg`;
@@ -360,12 +403,16 @@
                     processedFiles.push(result);
                     resolve();
                 };
+                img.onerror = () => {
+                    addErrorItem(file.name, "圖片檔案損毀或無法讀取");
+                    resolve();
+                };
             };
         });
     }
 
     /**
-     * 計算影像資料大小
+     * 估算 Base64 資料流的檔案大小
      */
     function calculateBase64Size(base64String) {
         const stringLength = base64String.length - base64String.indexOf(',') - 1;
@@ -373,7 +420,7 @@
     }
 
     /**
-     * UI 渲染：添加結果項目至清單
+     * 更新 UI：添加轉檔成功項目
      */
     function addToFileList(fileObj) {
         const item = document.createElement('div');
@@ -387,14 +434,32 @@
                 </div>
             </div>
             <div class="actions">
-                <a href="${fileObj.url}" download="${fileObj.name}" class="download-link">下載</a>
+                <a href="${fileObj.url}" download="${fileObj.name}" class="download-link">點擊下載</a>
             </div>
         `;
         fileList.prepend(item);
     }
 
     /**
-     * 下載機制：觸發批次下載並避免瀏覽器阻塞
+     * 更新 UI：添加錯誤提示項目
+     */
+    function addErrorItem(name, errorMsg) {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.innerHTML = `
+            <div class="file-info">
+                <div class="preview-thumb" style="display:flex;align-items:center;justify-content:center;color:#ccc;">?</div>
+                <div class="details">
+                    <span class="filename">${name}</span>
+                    <span class="status error">錯誤: ${errorMsg}</span>
+                </div>
+            </div>
+        `;
+        fileList.prepend(item);
+    }
+
+    /**
+     * 下載模組：批次觸發虛擬點擊，加入 400ms 間隔防止被瀏覽器視為廣告彈窗
      */
     downloadAllBtn.addEventListener('click', () => {
         processedFiles.forEach((file, index) => {
@@ -410,18 +475,18 @@
     });
 
     /**
-     * 事件監聽：支援檔案拖放功能
+     * 交互模組：拖曳處理
      */
-    const dropZone = document.querySelector('.upload-section');
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => {
         dropZone.addEventListener(eName, (e) => {
             e.preventDefault();
             e.stopPropagation();
         }, false);
     });
+
     dropZone.addEventListener('drop', (e) => {
         const files = Array.from(e.dataTransfer.files);
-        handleFiles(files);
+        if (files.length > 0) handleFiles(files);
     });
 </script>
 
