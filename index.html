@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ibest 文章圖片轉檔</title>
+    <!-- 網頁 Favicon：採用 SVG Data URI 嵌入，確保單檔案完整性 -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238E9775'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E">
+    
     <!-- 引入 HEIC 轉換函式庫：支援 Apple 裝置原生格式 -->
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    
     <style>
         /**
          * 設計風格：日式商業風格 (Japanese Business Style)
@@ -52,6 +56,15 @@
             margin-bottom: 40px;
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        header svg {
+            width: 32px;
+            height: 32px;
         }
 
         header h1 {
@@ -200,6 +213,8 @@
 
 <div class="container">
     <header>
+        <!-- 同步加入標題裝飾圖示 -->
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='#8E9775'><path d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/></svg>
         <h1>ibest 文章圖片轉檔</h1>
     </header>
 
@@ -234,7 +249,7 @@
      * 1. 提供本地影像格式轉換流程，包含 HEIC 格式預處理。
      * 2. 影像渲染邏輯：利用 Canvas API 進行比例縮放與渲染。
      * 3. 壓縮邏輯：設置高基準品質(95%)，若結果超出體積限制則執行動態降質。
-     * 4. 檔名管理：提取原檔名後，後綴固定為小寫副檔名。
+     * 4. 檔名管理：提取原檔名後，後綴固定為小寫副檔名，並精確保留大小寫。
      */
 
     const fileInput = document.getElementById('fileInput');
@@ -318,7 +333,7 @@
                     ctx.drawImage(img, 0, 0, width, height);
 
                     // 核心品質與體積壓縮邏輯
-                    let quality = 0.95; // 初始品質調整為 95%
+                    let quality = 0.95; // 初始品質從 95% 開始
                     let dataUrl = canvas.toDataURL('image/jpeg', quality);
                     
                     // 體積校正：若超過 5MB 則遞減品質
@@ -328,7 +343,7 @@
                         dataUrl = canvas.toDataURL('image/jpeg', quality);
                     }
 
-                    // 檔名處理：提取原檔名部分，完全保留大小寫，副檔名統一為小寫 .jpg
+                    // 檔名處理：提取原檔名部分，精確保留大小寫，副檔名統一為小寫 .jpg
                     const lastDotIndex = file.name.lastIndexOf('.');
                     const originalBaseName = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
                     const newFileName = `${originalBaseName}.jpg`;
