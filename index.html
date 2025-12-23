@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ibest 文章圖片轉檔</title>
-    <!-- 引入 HEIC 轉換函式庫 -->
+    <!-- 引入 HEIC 轉換函式庫：支援 Apple 裝置原生格式 -->
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <style>
+        /**
+         * 設計風格：日式商業風格 (Japanese Business Style)
+         * 配色方案：莫蘭迪配色 (Morandi Palette)
+         */
         :root {
             --bg-color: #F7F6F2;
             --primary-color: #8E9775;
@@ -15,7 +19,7 @@
             --text-color: #4A4A4A;
             --border-color: #E0DDD5;
             --white: #FFFFFF;
-            --loading-bg: rgba(255, 255, 255, 0.8);
+            --loading-bg: rgba(255, 255, 255, 0.85);
         }
 
         * {
@@ -157,11 +161,6 @@
             color: #888;
         }
 
-        .status.processing {
-            color: var(--accent-color);
-            font-weight: bold;
-        }
-
         .download-link {
             color: var(--primary-color);
             text-decoration: underline;
@@ -196,7 +195,7 @@
 <body>
 
 <div id="globalLoader">
-    <p>正在轉換 HEIC 檔案，請稍候...</p>
+    <p>正在處理圖片，請稍候...</p>
 </div>
 
 <div class="container">
@@ -205,18 +204,19 @@
     </header>
 
     <div class="rules">
-        <strong>系統轉檔規範：</strong>
+        <strong>轉檔與壓縮規範：</strong>
         <ul>
-            <li>• 支援格式：JPG, PNG, WebP, <strong>HEIC (iPhone 格式)</strong></li>
-            <li>• 輸出格式：JPG（副檔名：.jpg）</li>
-            <li>• 圖片尺寸：長邊自動限制 2000px 內</li>
-            <li>• 檔案大小：自動壓縮至 5MB 以下</li>
+            <li>• <strong>格式轉換：</strong>統一轉換為 `.jpg` (副檔名一律小寫)</li>
+            <li>• <strong>檔名保留：</strong>保留原始檔名與大小寫</li>
+            <li>• <strong>尺寸限制：</strong>長邊自動限制於 2000px 內 (等比例縮放)</li>
+            <li>• <strong>品質壓縮：</strong>預設使用 95% 品質壓縮</li>
+            <li>• <strong>體積限制：</strong>檔案大小強制限制於 5MB 以下</li>
         </ul>
     </div>
 
     <div class="upload-section" onclick="document.getElementById('fileInput').click()">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#A2AAB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        <p>點擊或拖曳圖片至此處 (支援 HEIC)</p>
+        <p>點擊或拖曳圖片至此處 (支援 JPG, PNG, HEIC, WebP)</p>
         <button class="btn">選取檔案</button>
         <input type="file" id="fileInput" accept="image/*,.heic,.heif" multiple>
     </div>
@@ -230,10 +230,11 @@
 
 <script>
     /**
-     * 程式功能性說明：
-     * 1. 支援 HEIC/HEIF 預處理：透過 heic2any 函式庫轉換為 Blob。
-     * 2. 圖片調整：讀取轉化後的資料至 Canvas，執行縮放與格式轉換。
-     * 3. 檔名處理：統一移除原副檔名並加上小寫 .jpg。
+     * 整體功能性說明：
+     * 1. 提供本地影像格式轉換流程，包含 HEIC 格式預處理。
+     * 2. 影像渲染邏輯：利用 Canvas API 進行比例縮放與渲染。
+     * 3. 壓縮邏輯：設置高基準品質(95%)，若結果超出體積限制則執行動態降質。
+     * 4. 檔名管理：提取原檔名後，後綴固定為小寫副檔名。
      */
 
     const fileInput = document.getElementById('fileInput');
@@ -248,10 +249,11 @@
         if (files.length > 0) {
             await handleFiles(files);
         }
-        fileInput.value = ""; // 清空以便重複選取
+        fileInput.value = ""; 
     });
 
     async function handleFiles(files) {
+        processedFiles = []; 
         for (const file of files) {
             await processImage(file);
         }
@@ -265,11 +267,10 @@
             const fileNameLower = file.name.toLowerCase();
             let targetBlob = file;
 
-            // 處理 HEIC 檔案
+            // 預處理：HEIC/HEIF 轉換為 JPEG Blob 供後續 Canvas 讀取
             if (fileNameLower.endsWith('.heic') || fileNameLower.endsWith('.heif')) {
                 globalLoader.style.display = 'flex';
                 try {
-                    // 將 HEIC 轉為 JPEG Blob
                     const convertedBlob = await heic2any({
                         blob: file,
                         toType: "image/jpeg",
@@ -277,7 +278,7 @@
                     });
                     targetBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
                 } catch (error) {
-                    console.error("HEIC 轉換失敗:", error);
+                    console.error("HEIC 解碼失敗:", error);
                     resolve();
                     return;
                 } finally {
@@ -296,6 +297,7 @@
                     let height = img.height;
                     const maxSide = 2000;
 
+                    // 縮放邏輯：長邊基準限制 2000px
                     if (width > maxSide || height > maxSide) {
                         if (width > height) {
                             height = Math.round((height * maxSide) / width);
@@ -309,22 +311,27 @@
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
+                    
+                    // 背景處理：確保透明背景圖層轉為 JPG 時呈現白色
                     ctx.fillStyle = "#FFFFFF";
                     ctx.fillRect(0, 0, width, height);
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    let quality = 0.92;
+                    // 核心品質與體積壓縮邏輯
+                    let quality = 0.95; // 初始品質調整為 95%
                     let dataUrl = canvas.toDataURL('image/jpeg', quality);
                     
-                    // 確保檔案大小小於 5MB
+                    // 體積校正：若超過 5MB 則遞減品質
                     const limit = 5 * 1024 * 1024;
                     while (calculateBase64Size(dataUrl) > limit && quality > 0.1) {
                         quality -= 0.05;
                         dataUrl = canvas.toDataURL('image/jpeg', quality);
                     }
 
-                    const originalBaseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                    const newFileName = `${originalBaseName.toLowerCase().replace(/\s+/g, '_')}.jpg`;
+                    // 檔名處理：提取原檔名部分，完全保留大小寫，副檔名統一為小寫 .jpg
+                    const lastDotIndex = file.name.lastIndexOf('.');
+                    const originalBaseName = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
+                    const newFileName = `${originalBaseName}.jpg`;
                     
                     const result = {
                         name: newFileName,
@@ -342,11 +349,17 @@
         });
     }
 
+    /**
+     * 計算影像資料大小
+     */
     function calculateBase64Size(base64String) {
         const stringLength = base64String.length - base64String.indexOf(',') - 1;
         return Math.ceil(stringLength * 0.75);
     }
 
+    /**
+     * UI 渲染：添加結果項目至清單
+     */
     function addToFileList(fileObj) {
         const item = document.createElement('div');
         item.className = 'file-item';
@@ -355,7 +368,7 @@
                 <img src="${fileObj.url}" class="preview-thumb">
                 <div class="details">
                     <span class="filename">${fileObj.name}</span>
-                    <span class="status">尺寸: ${fileObj.dimensions} | 大小: ${fileObj.newSize} KB</span>
+                    <span class="status">解析度: ${fileObj.dimensions} | 大小: ${fileObj.newSize} KB</span>
                 </div>
             </div>
             <div class="actions">
@@ -365,6 +378,9 @@
         fileList.prepend(item);
     }
 
+    /**
+     * 下載機制：觸發批次下載並避免瀏覽器阻塞
+     */
     downloadAllBtn.addEventListener('click', () => {
         processedFiles.forEach((file, index) => {
             setTimeout(() => {
@@ -378,7 +394,9 @@
         });
     });
 
-    // 拖曳處理
+    /**
+     * 事件監聽：支援檔案拖放功能
+     */
     const dropZone = document.querySelector('.upload-section');
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => {
         dropZone.addEventListener(eName, (e) => {
